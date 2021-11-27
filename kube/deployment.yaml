@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: containerbay
+  labels:
+    app: containerbay
+spec:
+  selector:
+    matchLabels:
+      app: containerbay
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: containerbay
+      name: containerbay
+    spec:
+      containers:
+        - name: containerbay
+          image: quay.io/mudler/containerbay
+          args:
+            - run
+          env:
+            - name: CONTAINERBAY_CACHEDIR
+              value: "/store"
+            - name: CONTAINERBAY_LISTENADDR
+              value: ":8080"
+            - name: CONTAINERBAY_MAGICDNS
+              value: ".bay.mocaccino.org"
+            - name: CONTAINERBAY_MAXSIZE
+              value: "100MB"
+            - name: CONTAINERBAY_CLEANUPINTERVAL
+              value: "1h"
+          volumeMounts:
+            - name: storage
+              mountPath: /store
+      volumes:
+        - name: storage
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: containerbay
+spec:
+  selector:
+    app: containerbay
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: containerbay
+spec:
+  rules:
+    - host: ""
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name:  containerbay
+                port:
+                  number: 8080

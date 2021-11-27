@@ -1,0 +1,22 @@
+# This ingress route is an example to setup for a magic dns.
+# It allows then to curl the instance with http://registry.org.repository.tag.magicdns format
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: containerbay
+  namespace: containerbay
+spec:
+  routes:                           
+  - kind: Rule
+    match: HostRegexp(`{subdomain:.*}.DOMAIN`)
+    priority: 10                    
+    services:                       
+    - kind: Service
+      name: containerbay
+      namespace: containerbay
+      passHostHeader: true
+      port: 8080
+      responseForwarding:
+        flushInterval: 1ms
+      scheme: http
+      strategy: RoundRobin

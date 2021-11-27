@@ -1,0 +1,22 @@
+# This traefik configuration globs ALL the traffic to the service.
+# This is required for e.g. to support DNS redirect via CNAME/TXT records.
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: containerbay
+  namespace: containerbay
+spec:
+  routes:                           
+  - kind: Rule
+    match: HostRegexp(`{subdomain:.*}`)
+    priority: 10                    
+    services:                       
+    - kind: Service
+      name: containerbay
+      namespace: containerbay
+      passHostHeader: true
+      port: 8080
+      responseForwarding:
+        flushInterval: 1ms
+      scheme: http
+      strategy: RoundRobin
