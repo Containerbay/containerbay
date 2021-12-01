@@ -36,7 +36,7 @@ Some notable examples that you can just browse right away:
 - [Our example page here](https://containerbay.io/quay.io/mudler/containerbay:website/) alternatively [here](http://quay.io.mudler.containerbay.website.containerbay.io/) hosted on [quay.io](https://quay.io/repository/mudler/containerbay)!
 - [openSUSE](https://containerbay.io/docker.io/opensuse/leap/)
 - [Alpine](https://containerbay.io/docker.io/library/alpine/)
-
+- [Alpine (mirror)](https://containerbay.io/mirror.gcr.io/library/alpine/etc/)
 
 If there is no index page, it will fallback to list all the present files, so it can be used to browse also already existing container images content
 
