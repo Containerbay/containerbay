@@ -28,7 +28,7 @@ Containerbay allows to serve OCI container artifacts as static websites and brow
 # :notebook: Example
 
 ```bash
-curl https://containerbay.io/quay.io/mudler/containerbay:website/
+curl https://containerbay.io/ghcr.io/containerbay/containerbay.io:latest/
 ```
 
 Some notable examples that you can just browse right away:
