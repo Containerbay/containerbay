@@ -13,6 +13,7 @@ import (
 	"github.com/mholt/archiver/v3"
 	"github.com/mudler/containerbay/api"
 	"github.com/mudler/containerbay/internal"
+	terminal "github.com/mudler/go-isterminal"
 	"github.com/mudler/luet/pkg/api/core/image"
 	"github.com/pkg/errors"
 	"github.com/pterm/pterm"
@@ -77,6 +78,15 @@ var flags = []cli.Flag{
 	},
 }
 
+type ptermWriter struct {
+	Printer pterm.PrefixPrinter
+}
+
+func (p *ptermWriter) Write(b []byte) (int, error) {
+	p.Printer.Println(string(b))
+	return len(b), nil
+}
+
 func echoConfig(c *cli.Context) func(e *echo.Echo) error {
 	return func(e *echo.Echo) error {
 		if c.Bool("gzip") {
@@ -84,7 +94,7 @@ func echoConfig(c *cli.Context) func(e *echo.Echo) error {
 				Level: 5,
 			}))
 		}
-		e.Use(middleware.Logger())
+		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{Output: &ptermWriter{Printer: pterm.Info}}))
 		return nil
 	}
 }
@@ -95,6 +105,11 @@ func startBanner() {
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
+	if !terminal.IsTerminal(os.Stdout) {
+		pterm.DisableColor()
+		pterm.DisableStyling()
+	}
+
 	app := &cli.App{
 		Name:    "containerbay",
 		Author:  "Ettore Di Giacinto",
