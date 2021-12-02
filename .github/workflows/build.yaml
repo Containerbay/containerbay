@@ -57,11 +57,3 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ steps.prep.outputs.tags }}
-      - name: Build
-        uses: docker/build-push-action@v2
-        with:
-          builder: ${{ steps.buildx.outputs.name }}
-          context: website
-          file: ./website/Dockerfile
-          push: true
-          tags: quay.io/mudler/containerbay:website

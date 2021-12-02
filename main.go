@@ -45,7 +45,7 @@ var flags = []cli.Flag{
 		Name:   "default-image",
 		Usage:  "Default image to use",
 		EnvVar: "CONTAINERBAY_DEFAULTIMAGE",
-		Value:  "quay.io/mudler/containerbay:website",
+		Value:  "ghcr.io/containerbay/containerbay.io:latest",
 	},
 	&cli.StringFlag{
 		Name:   "cleanup",

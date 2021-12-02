@@ -33,7 +33,7 @@ curl https://containerbay.io/quay.io/mudler/containerbay:website/
 
 Some notable examples that you can just browse right away:
 
-- [Our example page here](https://containerbay.io/quay.io/mudler/containerbay:website/) alternatively [here](http://quay.io.mudler.containerbay.website.containerbay.io/) hosted on [quay.io](https://quay.io/repository/mudler/containerbay)!
+- [Our example page here](https://containerbay.io/ghcr.io/containerbay/containerbay.io:latest/)  hosted on [ghcr.io](https://ghcr.io/containerbay/containerbay.io)!
 - [openSUSE](https://containerbay.io/docker.io/opensuse/leap/)
 - [Alpine](https://containerbay.io/docker.io/library/alpine/)
 - [Alpine (mirror)](https://containerbay.io/mirror.gcr.io/library/alpine/etc/)
@@ -66,7 +66,7 @@ will return `/etc/os-release` from `alpine:latest`.
 
 ## Bind to a custom domain
 
-Containerbay can associate a custom domain to a container image. In this way you can have images containing static HTML files and use it to serve a subdomain or a top level dns. See as an example the `website` folder in this repository.
+Containerbay can associate a custom domain to a container image. In this way you can have images containing static HTML files and use it to serve a subdomain or a top level dns. See as an [example repository](https://github.com/containerbay/containerbay.io).
 
 Point your DNS to the containerbay instance via `A` or `CNAME` and add a corresponding `TXT` record.
 
