@@ -82,12 +82,12 @@ Containerbay can be used to deploy static website.
 There is available a `pack` command which is a helper in order to create tar archives from files that can be loaded from docker in order to be pushed over a registry, for instance, if you have a folder with a index.html:
 
 ```bash
-# Create output.tar, and include api/public/index.html. The container image will be named quay.io/mudler/containerbay:website
-containerbay pack --destination output.tar quay.io/mudler/containerbay:website api/public/index.html
+# Create output.tar, and include api/public/index.html. We will name the container image will be  ghcr.io/containerbay/containerbay.io:latest
+containerbay pack --destination output.tar ghcr.io/containerbay/containerbay.io:latest api/public/index.html
 # Load the image to the docker daemon
 docker load -i output.tar
 # Push the container image
-docker push quay.io/mudler/containerbay:website
+docker push ghcr.io/containerbay/containerbay.io:latest
 ```
 
 `containerbay pack` accepts a destination output with the `--destination` flag, first argument is the container image
@@ -110,7 +110,7 @@ docker run -p 80:8080 \
            -e CONTAINERBAY_MAGICDNS= \
            -e CONTAINERBAY_MAXSIZE=100MB \
            -e CONTAINERBAY_CLEANUPINTERVAL=1h \
-           -ti --restart=always --name containerbay quay.io/mudler/containerbay run
+           -ti --restart=always --name containerbay ghcr.io/containerbay/containerbay run
 ```
 
 The API endpoint will be accessible at `localhost:80`

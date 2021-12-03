@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: containerbay
-          image: quay.io/mudler/containerbay
+          image: ghcr.io/containerbay/containerbay.io:latest
           args:
             - run
           env:
