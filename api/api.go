@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -58,6 +59,9 @@ func (a *API) downloadImage(image, dst string) error {
 	}
 	os.MkdirAll(dst, os.ModePerm)
 	a.mu.Unlock()
+
+	os.WriteFile(filepath.Join(dst, ".lock"), []byte{}, 0600)
+	defer os.RemoveAll(filepath.Join(dst, ".lock"))
 
 	pterm.Info.Printfln("Downloading %s to %s", image, dst)
 	ref, err := name.ParseReference(image)
@@ -190,6 +194,10 @@ func (a *API) renderImage(c echo.Context, image, strip string) error {
 		pterm.Info.Printfln("Not present in cache %s: %s Size: %s", h.Hex, image, units.HumanSize(float64(size)))
 		a.pool <- workPackage{img: image, dst: a.cacheStore.Path(h.Hex)}
 		return c.HTML(202, "Processing the request, try again soon.")
+	}
+
+	if _, err := os.Stat(filepath.Join(a.cacheStore.Path(h.Hex), ".lock")); err == nil {
+		return c.HTML(202, "Still processing, try again soon.")
 	}
 
 	pterm.Info.Printfln("Render from cache %s: %s Size: %s", h.Hex, image, units.HumanSize(float64(size)))
