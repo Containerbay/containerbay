@@ -6,7 +6,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	containerdarchive "github.com/containerd/containerd/archive"
@@ -31,12 +33,16 @@ type API struct {
 	magicDNS          string
 	standaloneImage   string
 	defaultImage      string
+	whitelist         []string
+	whitergx          []*regexp.Regexp
 	cacheStore        *store.Store
 	maxSize           int64
 	poolSize, workers int
 	pool              chan workPackage
 	cleanupInterval   time.Duration
 	auth              *types.AuthConfig
+
+	mu sync.Mutex
 }
 
 type workPackage struct {
@@ -44,7 +50,16 @@ type workPackage struct {
 }
 
 func (a *API) downloadImage(image, dst string) error {
+	// Let just one of the routine go and handle the download
+	a.mu.Lock()
+	if _, err := os.Stat(dst); err == nil {
+		a.mu.Unlock()
+		return nil
+	}
 	os.MkdirAll(dst, os.ModePerm)
+	a.mu.Unlock()
+
+	pterm.Info.Printfln("Downloading %s to %s", image, dst)
 	ref, err := name.ParseReference(image)
 	if err != nil {
 		return err
@@ -72,6 +87,9 @@ func (a *API) downloadImage(image, dst string) error {
 	if err != nil {
 		return err
 	}
+
+	pterm.Info.Printfln("Downloaded %s to %s", image, dst)
+
 	return nil
 }
 
@@ -131,6 +149,17 @@ func (a *API) cleanupWorker(ctx context.Context) {
 }
 
 func (a *API) renderImage(c echo.Context, image, strip string) error {
+	if len(a.whitergx) > 0 {
+		ok := false
+		for _, r := range a.whitergx {
+			if r.MatchString(image) {
+				ok = true
+			}
+		}
+		if !ok {
+			return retError(c, "forbidden image '%s'", image)
+		}
+	}
 
 	ref, err := name.ParseReference(image)
 	if err != nil {
@@ -144,11 +173,11 @@ func (a *API) renderImage(c echo.Context, image, strip string) error {
 
 	size := imageSize(img)
 	if a.maxSize != 0 && size > a.maxSize {
-		pterm.Warning.Printfln("Refusing to serve image '%s' (size: %s)\n", image, units.HumanSize(float64(size)))
+		pterm.Warning.Printfln("Refusing to serve image '%s' (size: %s)", image, units.HumanSize(float64(size)))
 		return retError(c, "max size exceeded: image %d, threshold %d", size, a.maxSize)
 	}
 
-	pterm.Info.Printfln("Serving image: %s Size: %s\n", image, units.HumanSize(float64(size)))
+	pterm.Info.Printfln("Serving image: %s Size: %s", image, units.HumanSize(float64(size)))
 
 	h, err := img.Digest()
 	if err != nil {
@@ -158,10 +187,12 @@ func (a *API) renderImage(c echo.Context, image, strip string) error {
 	// If doesn't exist in cache we have to download it
 	// We let the worker download them, and handle the request separately
 	if !a.cacheStore.Exists(h.Hex) {
-		pterm.Info.Printfln("Not present in cache %s: %s Size: %s\n", h.Hex, image, units.HumanSize(float64(size)))
+		pterm.Info.Printfln("Not present in cache %s: %s Size: %s", h.Hex, image, units.HumanSize(float64(size)))
 		a.pool <- workPackage{img: image, dst: a.cacheStore.Path(h.Hex)}
-		return c.HTML(202, "Processing")
+		return c.HTML(202, "Processing the request, try again soon.")
 	}
+
+	pterm.Info.Printfln("Render from cache %s: %s Size: %s", h.Hex, image, units.HumanSize(float64(size)))
 
 	return echo.WrapHandler(
 		http.StripPrefix(strip, http.FileServer(http.Dir(a.cacheStore.Path(h.Hex)))))(c)
@@ -207,6 +238,15 @@ func (a *API) Start(opts ...EchoOption) error {
 	a.startWorkers()
 	a.cleanupWorker(context.Background())
 	a.cacheStore.CleanAll()
+
+	for _, w := range a.whitelist {
+		r, err := regexp.Compile(w)
+		if err != nil {
+			return err
+		}
+		a.whitergx = append(a.whitergx, r)
+		pterm.Info.Printfln("Whitelist '%s'", w)
+	}
 
 	ec := echo.New()
 	for _, o := range opts {

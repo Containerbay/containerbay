@@ -48,6 +48,11 @@ var flags = []cli.Flag{
 		EnvVar: "CONTAINERBAY_DEFAULTIMAGE",
 		Value:  "ghcr.io/containerbay/containerbay.io:latest",
 	},
+	&cli.StringSliceFlag{
+		Name:   "whitelist",
+		Usage:  "Regex list of images allowed",
+		EnvVar: "WHITELIST",
+	},
 	&cli.StringFlag{
 		Name:   "cleanup",
 		Usage:  "store cleanup interval",
@@ -213,6 +218,7 @@ $ containerbay standalone foo/image:tag
 					}
 					startBanner()
 					return api.New(
+						api.WithWhitelist(c.StringSlice("whitelist")...),
 						api.WithListeningAddress(c.String("address")),
 						api.WithCacheStore(c.String("store")),
 						api.WithMagicDNS(c.String("dns")),

@@ -19,6 +19,15 @@ func WithDNSField(s string) func(*API) error {
 	}
 }
 
+// WithWhitelist adds a list of regexes to be whiteliste of the images that can be served.
+// Those that doesn't match regexes are refused
+func WithWhitelist(s ...string) func(*API) error {
+	return func(a *API) error {
+		a.whitelist = append(a.whitelist, s...)
+		return nil
+	}
+}
+
 // WithDefaultImage sets the DefaultImage which will be used
 // as fallback
 func WithDefaultImage(s string) func(*API) error {
