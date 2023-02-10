@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -15,12 +14,11 @@ import (
 type Store struct {
 	sync.Mutex
 	dir string
-	l   map[string]*sync.Mutex
 }
 
 // New returns a new store in the specified directory
 func New(dir string) *Store {
-	return &Store{dir: dir, l: make(map[string]*sync.Mutex)}
+	return &Store{dir: dir}
 }
 
 // EnsureExists ensures the store directory exists and have the correct permissions
@@ -30,7 +28,7 @@ func (s *Store) EnsureExists() error {
 
 // Exists checks weather the given key exists in the cache
 func (s *Store) Exists(ss string) bool {
-	if _, err := os.Stat(filepath.Join(s.dir, ss)); err == nil {
+	if _, err := os.Stat(s.Path(ss)); err == nil {
 		return true
 	}
 	return false
@@ -41,41 +39,9 @@ func (s *Store) Path(p ...string) string {
 	return filepath.Join(append([]string{s.dir}, p...)...)
 }
 
-func (s *Store) lockPath(p string) string {
-	return s.Path(fmt.Sprintf("%s.lock", p))
-}
-
 // String return the underlying directory store
 func (s *Store) String() string {
 	return s.dir
-}
-
-// Lock locks the access store for the given cache key
-// It is blocking
-func (s *Store) Lock(p string) {
-	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
-
-	if l, exists := s.l[p]; exists {
-		l.Lock()
-	} else {
-		s.l[p] = &sync.Mutex{}
-		s.l[p].Lock()
-	}
-
-	pterm.Debug.Println("Acquiring lock", p)
-}
-
-// Unlock unlocks the access store for the given cache key
-func (s *Store) Unlock(p string) {
-	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
-	if l, exists := s.l[p]; exists {
-		l.Unlock()
-		delete(s.l, p)
-	}
-
-	pterm.Debug.Println("Unlocked", p)
 }
 
 // CleanAll cleans up the cache store
@@ -104,11 +70,6 @@ func (s *Store) Clean() error {
 	}
 
 	for _, f := range files {
-
-		if _, ok := s.l[f.Name()]; ok {
-			pterm.Debug.Printfln("file %s locked", f.Name())
-			continue
-		}
 
 		pterm.Debug.Printfln("File '%s' pruned", f.Name())
 		os.RemoveAll(s.Path(f.Name()))

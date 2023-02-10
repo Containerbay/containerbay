@@ -34,9 +34,13 @@ type API struct {
 	cacheStore        *store.Store
 	maxSize           int64
 	poolSize, workers int
-	pool              chan func()
+	pool              chan workPackage
 	cleanupInterval   time.Duration
 	auth              *types.AuthConfig
+}
+
+type workPackage struct {
+	img, dst string
 }
 
 func (a *API) downloadImage(image, dst string) error {
@@ -94,7 +98,7 @@ func (a *API) startWorkers() {
 	for i := 0; i < a.workers; i++ {
 		go func() {
 			for f := range a.pool {
-				f()
+				a.downloadImage(f.img, f.dst)
 			}
 		}()
 	}
@@ -151,21 +155,12 @@ func (a *API) renderImage(c echo.Context, image, strip string) error {
 		return retError(c, "while getting image digest: %s", err.Error())
 	}
 
-	a.cacheStore.Lock(h.Hex)
-	defer a.cacheStore.Unlock(h.Hex)
 	// If doesn't exist in cache we have to download it
 	// We let the worker download them, and handle the request separately
 	if !a.cacheStore.Exists(h.Hex) {
-		done := make(chan interface{}, 1)
-		var err error
-		a.pool <- func() {
-			err = a.downloadImage(image, a.cacheStore.Path(h.Hex))
-			done <- nil
-		}
-		<-done
-		if err != nil {
-			return retError(c, "failed download image: '%s'", err.Error())
-		}
+		pterm.Info.Printfln("Not present in cache %s: %s Size: %s\n", h.Hex, image, units.HumanSize(float64(size)))
+		a.pool <- workPackage{img: image, dst: a.cacheStore.Path(h.Hex)}
+		return c.HTML(202, "Processing")
 	}
 
 	return echo.WrapHandler(
@@ -208,7 +203,7 @@ type EchoOption func(e *echo.Echo) error
 // Start starts the API with the given EchoOption
 func (a *API) Start(opts ...EchoOption) error {
 
-	a.pool = make(chan func(), a.poolSize)
+	a.pool = make(chan workPackage, a.poolSize)
 	a.startWorkers()
 	a.cleanupWorker(context.Background())
 	a.cacheStore.CleanAll()
