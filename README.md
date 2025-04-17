@@ -28,6 +28,8 @@
 This project is not maintained anymore, and I don't own anymore the `containerbay.io` domain!
 
 
+---
+
 Containerbay allows to serve OCI container artifacts as static websites and browse them from curl or your browser. Works also with MagicDNS(tm).
 
 # :notebook: Example
